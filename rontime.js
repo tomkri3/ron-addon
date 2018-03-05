@@ -1,5 +1,7 @@
-// constanty
-const SHOWWORKED = "Již odpracováno: ";
+﻿// constanty
+const SHOWWORKED = "Odpracováno: ";
+const SHOWTODAYNOWORK = "Dnes jste nezapočali doposud práci.";
+
 
 
 htmlBody = document.body.innerHTML;
@@ -7,7 +9,7 @@ htmlBody = document.body.innerHTML;
 //var htmlBody = 
 //"<html><head></head><body><table class='browser browserdenni puvodnidochazka'><tr class='today '><td class='browser_rowheader'><span class='zkratkadne'>Út</span>27.2.2018</td><td>07:07 &nbsp; Příchod</td><td>11:11 &nbsp; Přestávka</td><td>11:39 &nbsp; Příchod</td><td>13:44 &nbsp; Odchod</td><td>15:25 &nbsp; Příchod</td><td>16:54 &nbsp; Odchod</td></tr></table></body></html>";
 
-//document.body.innerHTML= htmlBody;
+document.body.innerHTML= htmlBody;
  //alert(GetDiffMinutes("11:30","12:30"));                  
                   
                   
@@ -37,6 +39,9 @@ var totalWorkMinute = 0;
 var starttime = "";
 var result = "";
 var endwithExit = false;
+var previous = "";
+var breakInfo ="";
+var breakStartTime = "";
 for (var i = 1; i < actions.length; i++) {
     var cur = actions[i].innerText;
     //alert(cur);
@@ -49,13 +54,22 @@ for (var i = 1; i < actions.length; i++) {
 
      if (stringactivity.toLowerCase().includes("příchod") && starttime == "")
      {
-      starttime =  stringtime;
+        starttime =  stringtime;
+        if (previous == "přestávka")
+        {
+            var breakMinute = GetDiffMinutes(breakStartTime,starttime);
+            if (breakMinute < 30) breakMinute = 30;
+            var breakTime =  GetHourAndMinuteFromMinute(breakMinute);
+            breakInfo = "Obědová pauza trvala: "+breakTime;
+        }
       //alert(starttime);
      }
      if (stringactivity.toLowerCase().includes("odchod") || stringactivity.toLowerCase().includes("přestávka") || stringactivity.toLowerCase().includes("soukromě")
      )
-     {
+     {       
+            previous = stringactivity.toLowerCase();
              totalWorkMinute += GetDiffMinutes(starttime,stringtime);
+             if (stringactivity.toLowerCase().includes("přestávka")) {breakStartTime = stringtime;}
              starttime = "";
              endwithExit = i == actions.length-1;
    
@@ -74,14 +88,20 @@ if (!endwithExit)
     totalWorkMinute += GetDiffMinutes(starttime,currentTime);
 }
 
-result =  GetHourAndMinuteFromMinute(totalWorkMinute);                       
+result =  GetHourAndMinuteFromMinute(totalWorkMinute);                    
+if (result.lenght==0 ) {   result = SHOWTODAYNOWORK;}
+
+if (breakInfo.length > 0 )
+{
+  result += "<br>"+breakInfo;
+}
 
 document.body.innerHTML= '<div style="padding-top:8px;padding-bottom:8px;position:relative;top:0;margin-top:0;width:100%;opacity:0.3;z-index:100;background:white;color:black;font-size:25px;text-align:center;">'+SHOWWORKED+result+'</div>'+htmlBody;
 
 
 function GetDiffMinutes(startTime, endTime)
 {
-    //alert ("Začátek "+startTime +" konec "+endTime);
+    //alert ("ZaÄ?Ăˇtek "+startTime +" konec "+endTime);
    var totalStartMinute = GetTotalMinute(startTime) ;
    var totalEndMinute =  GetTotalMinute(endTime);
    var totalDiffMinute = totalEndMinute - totalStartMinute;
@@ -100,6 +120,10 @@ function GetTotalMinute(time)
 
  function GetHourAndMinuteFromMinute(totalminute)
 {
+    if (isNaN(totalminute))
+    {
+        return null;
+    }
       var minute = totalminute % 60;
       var hour =  Math.floor(totalminute/60);
            var hourResult = hour < 10 ? "0"+hour.toString() : hour.toString();
